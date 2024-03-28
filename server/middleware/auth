@@ -1,0 +1,33 @@
+const jwt = require("jsonwebtoken");
+const jwtSecret="3##"; 
+
+const { promisify } = require("util");
+
+const verifyJwt = promisify(jwt.verify);
+
+const auth = async (req, res, next) => {
+  try {
+    // Récupérer le token JWT depuis l'en-tête Authorization
+    const token = req.headers.authorization;
+
+    // Vérifier si le token existe
+    if (!token) {
+      return res.json({ error: "Unauthorized: Missing token" });
+    }
+
+    // Vérifier et décoder le token JWT
+    const decoded = await verifyJwt(token, jwtSecret);
+
+    // Ajouter les informations de l'utilisateur décodé à l'objet de requête pour une utilisation ultérieure
+    req.user = decoded;
+
+    // Passer à l'étape suivante du middleware
+    next();
+  } catch (error) {
+    // En cas d'erreur lors de la vérification du token JWT
+    console.error("JWT verification error:", error);
+    return res.json({ error: "Unauthorized: Invalid token" });
+  }
+};
+
+module.exports = auth;
