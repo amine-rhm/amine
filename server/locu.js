@@ -191,7 +191,7 @@ app.get("/api/v1/profile", auth, async (request, response) => {
 
 
 
-// Verify the current user token if authenticated
+
 app.post('/api/v1/add-annonce', upload.array('file'),  (req, res) => {
   try {
     // Vérifier si req.files est défini et s'il contient des éléments
