@@ -2,21 +2,13 @@ const express=require("express");
 const app=express();
 const { v4: uuidv4 } = require('uuid');
 const { generateJwt } = require("./jwt/genratetoken");
-
-app.use(express.json()) ;
-
 const jwtSecret="3##"
 const auth = require ( "./middleware/auth");
 const mysql = require('mysql');
-
 const bcrypt=require("bcrypt")
-
 const saltOrRounds=10;
-
 const jwt =require("jsonwebtoken");
-
 const { upload } = require('./middleware/fich');
-
 const db = mysql.createConnection({
   host: "localhost",
   user: "root",
@@ -24,6 +16,7 @@ const db = mysql.createConnection({
   database: "tp02"
 });
 
+app.use(express.json()) ;
 
 // Connexion à la base de données
 db.connect((err) => {
@@ -37,7 +30,7 @@ db.connect((err) => {
 
 
 
-
+// juste un exemple lors de teste
 app.get("/users",(req,res)=>{
 const sql="select * from users";
 db.query (sql,(err,data)=>{
@@ -48,17 +41,15 @@ if (err)
 })
 
 
+// cree un compte sur la platforme locu
 app.post("/api/v1/register", (req, res) => {
-
   try {
-
     const lastname = req.body.lastname;
     const firstname = req.body.firstname;
     const email = req.body.email; 
     const password = req.body.password; 
 
     // Vérification si l'email est déjà utilisé
-
     db.query(
       `SELECT * FROM registerr WHERE email = ?`,
       [email],
@@ -71,12 +62,13 @@ app.post("/api/v1/register", (req, res) => {
         }
 
 
-        // Hachage ni 
+        // Hachage de mode passe de lutilisateur
         bcrypt.hash(password, saltOrRounds, (err, hash) => {
           if (err) {
             console.error("Error hachage :", err);
             return res.json({ error: " erreur trouvé dans le hachage" });
           }
+
           
           // Ajout des données dans la base de données
           db.query(
@@ -89,8 +81,7 @@ app.post("/api/v1/register", (req, res) => {
               }
           
 
-
-              // Génération du token JWT
+              // Génération du JWT
               const token = generateJwt({ email, firstname, lastname });
               console.log("token generated successfully:");
               
@@ -109,7 +100,6 @@ app.post("/api/v1/register", (req, res) => {
     console.error("Error registering user:", error);
     res.json({ error: "Internal Server Error" });
   }
-      
   console.log("User registered successfully:");
 });
 
@@ -119,12 +109,10 @@ app.post("/api/v1/register", (req, res) => {
 
 
 
-// tayi login ma tla dina 
-
+// tayi login  
 app.post("/api/v1/login", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
-
   db.query(
     'SELECT * FROM registerr WHERE email = ?',
     [email],
@@ -154,7 +142,6 @@ app.post("/api/v1/login", (req, res) => {
 
 
 
-
 //  Logout
 app.get("/api/v1/logout", (request, response) => {
   try {
@@ -168,9 +155,7 @@ app.get("/api/v1/logout", (request, response) => {
 });
 
 
-
 // verifier de3wa kifah
-
 app.get("/api/v1/profile", auth, async (request, response) => {
   try {
 
@@ -178,7 +163,6 @@ app.get("/api/v1/profile", auth, async (request, response) => {
       "SELECT iduser , firstname, lastname, email FROM regiisterr WHERE iduser= ?",
       [request.user.iduser]
     );
-
     response.json(user.rows[0]);
   } catch (error) {
     console.error(error.message);
@@ -191,29 +175,34 @@ app.get("/api/v1/profile", auth, async (request, response) => {
 
 
 
-
-app.post('/api/v1/add-annonce', upload.array('file'),  (req, res) => {
+// cree une annonce sur la platforme locu
+app.post('/api/v1/new/annonce',auth, upload.array('file',3), async (req, res) => {
   try {
-    // Vérifier si req.files est défini et s'il contient des éléments
-    if (req.files && req.files.length > 0) {
-      const image1 = req.files[0].filename;
-      const { surface, titre, type, description, prix, adresse } = req.body;
-      
-      // Insérer les données dans la base de données
-      db.query(
-        "INSERT INTO annonce (idann, surface, titre, type, description, prix, adresse, image) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-        [uuidv4(), surface, titre, type, description, prix, adresse, image1]
-      );
-      
-
-
-    } else {
-      // Gérer le cas où aucun fichier n'a été téléchargé
-      res.status(400).json({ message: "Aucun fichier n'a été téléchargé" });
+    if (!req.files || req.files.length === 0) {
+      return res.send({ message: "Aucun fichier n'a été téléchargé." });
     }
+    const image1 = req.files[0].filename;
+    const image2 = req.files[1].filename;
+    const image3 = req.files[2].filename;
+   
+    //const userId = request.user.user_id;  tayi apres kn wahi frontend
+    userId=123456;
+    const { type ,surface,adresse,prix,titre, description } = req.body;
+
+    // Validation pour voir
+    if (!titre || !description|| !surface|| !prix|| !description|| !adresse) {
+      return res.send({ message: "ces champs sont  requis." });
+    }
+    
+// insert to database 
+    await db.query(
+      "INSERT INTO annonce (idann,type,surface,adresse,prix, titre, description, image1,image2,image3,user_id) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+      [uuidv4(),type,surface,adresse,prix, titre, description, image1,image2,image3,userId]
+    );
+    res.send({ message: "Annonce ajoutée avec succès.", annonceId: uuidv4() , userId});
   } catch (error) {
-    console.error("Error handling request:", error);
-    res.status(500).json({ message: "Erreur lors de l'ajout de l'annonce" });
+    console.error("Erreur lors de l'ajout de l'annonce :", error);
+    res.send({ message: "Une erreur s'est produite lors de l'ajout de l'annonce." });
   }
 });
 
@@ -240,57 +229,11 @@ app.post('/api/v1/add-annonce', upload.array('file'),  (req, res) => {
 
 
 
-const verifyjwt = (req, res, next) => {
-  const token = req.headers["acces"];
-  if (!token) {
-    return res.json ("3iwdas apres");
-  } else {
-    jwt.verify(token, "jwtSecret", (err, decode) => {
-      if (err) {
-        return res.json ("dir athentification ");
-      } else {
-        const userId = decode.userid; 
-        req.userid = userId; 
-        console.log(userId)
-        next(); 
-      }
-    });
-  }
-};
-
-app.get('/checkauth', verifyjwt, (req, res) => {
-  res.send("amk dina ");
-});
-
-
-
-
-
-app.get("/amkdina", (req, res) => {
-  const crtkjs = (jsonData, jwtSecret, option = {}) => {
-      try {
-          const token = jwt.sign(jsonData, jwtSecret, option);
-          return token;
-      } catch (error) {
-          console.log({ message: "erreur dina" });
-          return null;
-      }
-  };
-
-  const jsonData = { email: "rahmouni@gmail.com", modepasse: "riitar" };
-  const token = crtkjs(jsonData, Secretkey);
-  if (token) {
-      return res.send({ status: true, token: token });
-  } else {
-      return res.send({ status: false });
-  }
-});
-
 
 
 
  
-
+// le port et message de connextion au serveur
 app.listen(3001,()=>{
 console.log("I am listen what kho ")
 
