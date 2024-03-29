@@ -104,11 +104,6 @@ app.post("/api/v1/register", (req, res) => {
 });
 
 
-
-
-
-
-
 // tayi login  
 app.post("/api/v1/login", (req, res) => {
   const email = req.body.email;
@@ -174,7 +169,6 @@ app.get("/api/v1/profile", auth, async (request, response) => {
 
 
 
-
 // cree une annonce sur la platforme locu
 app.post('/api/v1/new/annonce',auth, upload.array('file',3), async (req, res) => {
   try {
@@ -203,6 +197,55 @@ app.post('/api/v1/new/annonce',auth, upload.array('file',3), async (req, res) =>
   } catch (error) {
     console.error("Erreur lors de l'ajout de l'annonce :", error);
     res.send({ message: "Une erreur s'est produite lors de l'ajout de l'annonce." });
+  }
+});
+
+
+// recuperere tout les annonces 
+app.get("/api/v1/all/annonces", async(req,res)=>{
+  try{
+
+  const toutes = await db.query(
+ " select ( idann, type,surface,adresse,prix, titre, description,image1,image2,image3 ) from annonce ordere by annonce.idann " 
+)
+console.log("a ce niveau ya pas derreur")
+   res.json({
+    //  tab de objets 
+    totalListing : toutes.rows.length,
+    listing : toutes.rows,
+   });
+  } catch(error){
+
+      console.log(error);
+  };
+})
+
+
+
+//  section recement ajouter , recuperere les dernier annonce ajouter .
+app.get("/api/v1/recement/annonces", (req, res) => {
+  try {
+    db.query(
+      "SELECT idann, type, surface, adresse, prix, titre, description, image1, image2, image3 FROM annonce",
+      (error, result) => {
+        if (error) {
+          console.log(error);
+          res.json({ error: "Une erreur s'est produite lors de la récupération des annonces." });
+          return;
+        }
+        
+        // Triez les annonces par ID 1 2 3 4 5 
+        result.rows.sort((a, b) => b.idann - a.idann);
+
+        // Sélectionnez les 10 premières annonces
+        const dixDernieresAnnonces = result.rows.slice(0, 10);
+        // Envoyez les annonces sélectionnées en réponse
+        res.json({ annonces: dixDernieresAnnonces });
+      }
+    );
+  } catch (error) {
+    console.log(error);
+    res.json({ error: "Une erreur s'est produite lors de la récupération des annonces." });
   }
 });
 
