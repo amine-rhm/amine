@@ -289,8 +289,8 @@ app.get("/api/v1/recement/annonces", (req, res) => {
         // Triez les annonces par ID 1 2 3 4 5 
         result.rows.sort((a, b) => b.idann - a.idann);
 
-        // Sélectionnez les 10 premières annonces
-        const dixDernieresAnnonces = result.rows.slice(0, 10);
+        // Sélectionnez les 12 premières annonces
+        const dDernieresAnnonces = result.rows.slice(0, 12);
         // Envoyez les annonces sélectionnées en réponse
         res.json({ annonces: dixDernieresAnnonces });
       }
