@@ -220,6 +220,58 @@ console.log("a ce niveau ya pas derreur")
   };
 })
 
+// recuperer une annonce avec sans id 
+app.get("/api/v1/single/annonces/:id", async (request, response) => {
+  try {
+    const annid = request.params.id;
+    await pool.query(
+      "SELECT annonce.idann, annonce.titre, annonce.description, annonce.date_ajout, annonce.image1, annonce.image2, annonce.image3, annonce.image4, annonce.image5, annonce.iduser FROM annonce WHERE annonce.idann = ?",
+      [annid],
+      (err, result) => {
+        if (err) {
+          console.error(err);
+          return response.json({ error: "Une erreur s'est produite lors de la récupération des détails de l'annonce." });
+        }
+        if (result.length === 0) {
+          return response.json({ error: "Aucune annonce trouvée avec l'identifiant spécifié." });
+        }
+        response.json(result[0]);
+      }
+    );
+  } catch (error) {
+    console.error(error);
+    response.status(500).json({ error: "Une erreur s'est produite lors de la récupération des détails de l'annonce." });
+  }
+});
+
+
+
+
+app.get("/api/v1/single/whith info client/annonces/:id", async (request, response) => {
+  try {
+    const annid = request.params.id;
+    await pool.query(
+      "SELECT annonce.idann, annonce.titre, annonce.description, annonce.date_ajout, annonce.image1, annonce.image2, annonce.image3, annonce.image4, annonce.image5, annonce.iduser, client.nom, client.prenom, client.email FROM annonce INNER JOIN client ON annonce.iduser = client.iduser WHERE annonce.idann = ?",
+      [annid],
+      (err, result) => {
+        if (err) {
+          console.error(err);
+          return response.json({ error: "Une erreur s'est produite lors de la récupération des détails de l'annonce." });
+        }
+        if (result.length === 0) {
+          return response.json({ error: "Aucune annonce trouvée avec l'identifiant spécifié." });
+        }
+        response.json(result[0]);
+      }
+    );
+  } catch (error) {
+    console.error(error);
+    response.json({ error: "Une erreur s'est produite lors de la récupération des détails de l'annonce." });
+  }
+});
+
+
+
 
 
 //  section recement ajouter , recuperere les dernier annonce ajouter .
