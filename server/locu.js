@@ -28,8 +28,6 @@ db.connect((err) => {
 });
 
 
-
-
 // juste un exemple lors de teste
 app.get("/users",(req,res)=>{
 const sql="select * from users";
@@ -103,7 +101,6 @@ app.post("/api/v1/register", (req, res) => {
   console.log("User registered successfully:");
 });
 
-
 // tayi login  
 app.post("/api/v1/login", (req, res) => {
   const email = req.body.email;
@@ -136,7 +133,6 @@ app.post("/api/v1/login", (req, res) => {
 });
 
 
-
 //  Logout
 app.get("/api/v1/logout", (request, response) => {
   try {
@@ -150,23 +146,35 @@ app.get("/api/v1/logout", (request, response) => {
 });
 
 
-// verifier de3wa kifah
+//prover the auth
 app.get("/api/v1/profile", auth, async (request, response) => {
   try {
-
-    await db.query(
-      "SELECT iduser , firstname, lastname, email FROM regiisterr WHERE iduser= ?",
+    const user = await pool.query(
+      "SELECT iduser, nom, prenom, email FROM client WHERE iduser = ?",
       [request.user.iduser]
     );
+
+    if (user.rows.length === 0) {
+      return response.json({ msg: "Utilisateur non trouvé" });
+    }
+
     response.json(user.rows[0]);
   } catch (error) {
     console.error(error.message);
-    response.send({
-      msg: "Unauthenticated",
-    });
+    response.json({ msg: "Erreur serveur" });
   }
 });
 
+
+// Verify the current user token if authenticated
+app.get("/api/v1/verify", auth, async (request, response) => {
+  try {
+    response.json(true);
+  } catch (error) {
+    console.error(error.message);
+    response.status(500).send({ msg: "Unauthenticated" });
+  }
+});
 
 
 // cree une annonce sur la platforme locu
@@ -245,7 +253,7 @@ app.get("/api/v1/single/annonces/:id", async (request, response) => {
 });
 
 
-
+// recuperer une annonce avec id specifique et on inclu les info de le client 
 
 app.get("/api/v1/single/whith info client/annonces/:id", async (request, response) => {
   try {
@@ -269,9 +277,6 @@ app.get("/api/v1/single/whith info client/annonces/:id", async (request, respons
     response.json({ error: "Une erreur s'est produite lors de la récupération des détails de l'annonce." });
   }
 });
-
-
-
 
 
 //  section recement ajouter , recuperere les dernier annonce ajouter .
@@ -302,32 +307,51 @@ app.get("/api/v1/recement/annonces", (req, res) => {
 });
 
 
+// recherche basique 
+app.get("/api/v1/basique/recherche", (req, res) => {
+  const {ville, prix} = req.body;
+
+  pool.query(
+    "SELECT annonce.idann, annonce.titre, annonce.description, annonce.date_ajout, annonce.image1, annonce.image2, annonce.image3, annonce.image4, annonce.image5,annonce.iduser FROM annonce JOIN bien ON bien.idann = annonce.idann WHERE bien.ville LIKE ? and prix <= ?",
+    [`%${ville}%`,prix],
+      (error, result) => {
+          if (error) { 
+
+              console.error(error);
+              res.send("Une erreur s'est produite lors de la recherche.");
+          } else {
+              res.send({
+                  totalListing: result.length,
+                  listing: result
+              });
+          }
+      }
+  );
+});
 
 
+// recherche avancé
+app.get("/api/v1/avance/recherche", (req, res) => {
+  const {ville, prix,surface,meublé,type} = req.body;
+
+  pool.query(
+    "SELECT bien.surface,bien.type,bien.meublé,annonce.idann, annonce.titre, annonce.description, annonce.date_ajout, annonce.image1, annonce.image2, annonce.image3, annonce.image4, annonce.image5,annonce.iduser FROM annonce JOIN bien ON bien.idann = annonce.idann WHERE bien.ville LIKE ? and prix <= ? and bien.surface=? and bien.meublé= ? and bien.type =? ",
+    [`%${ville}%`,prix,surface,meublé,type],
+      (error, result) => {
+          if (error) { 
+              console.error(error);
+              res.send("Une erreur s'est produite lors de la recherche.");
+          } else {
+              res.send({
+                  totalListing: result.length,
+                  listing: result
+              });
+          }
+      }
+  );
+});
 
 
-  
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
- 
 // le port et message de connextion au serveur
 app.listen(3001,()=>{
 console.log("I am listen what kho ")
