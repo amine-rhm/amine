@@ -1,32 +1,26 @@
 const jwt = require("jsonwebtoken");
-const jwtSecret="3##"; 
+const dotenv = require("dotenv");
+dotenv.config();
 
-const { promisify } = require("util");
 
-const verifyJwt = promisify(jwt.verify);
-
-const auth = async (req, res, next) => {
+const auth = (req, res, next) => {
   try {
-    // Récupérer le token JWT depuis l'en-tête Authorization
-    const token = req.headers.authorization;
-
-    // Vérifier si le token existe
+    const token = req.cookies.accessToken || req.headers.authorization.split(" ")[1];
     if (!token) {
-      return res.json({ error: "Unauthorized: Missing token" });
+      return res.json({ message: "Token non fourni" });
     }
 
-    // Vérifier et décoder le token JWT
-    const decoded = await verifyJwt(token, jwtSecret);
-
-    // Ajouter les informations de l'utilisateur décodé à l'objet de requête pour une utilisation ultérieure
-    req.user = decoded;
-
-    // Passer à l'étape suivante du middleware
-    next();
+    jwt.verify(token, process.env.jwtSecret, (err, userData) => {
+      if (err) {
+        console.error("Erreur de vérification du token:", err);
+        return res.json({ message: "Token invalide" });
+      }
+      req.userData = userData;
+      next();
+    });
   } catch (error) {
-    // En cas d'erreur lors de la vérification du token JWT
-    console.error("JWT verification error:", error);
-    return res.json({ error: "Unauthorized: Invalid token" });
+    console.error("Erreur lors de la vérification du token:", error);
+    return res.json({ message: "Erreur serveur lors de la vérification du token" });
   }
 };
 
